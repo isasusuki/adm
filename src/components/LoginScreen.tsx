@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSchool } from '../context/SchoolContext';
-import { Shield, KeyRound, ArrowRight, UserCheck, School, Lock, Eye, AlertCircle, Users } from 'lucide-react';
+import { Shield, KeyRound, ArrowRight, UserCheck, School, Lock, Eye, AlertCircle, Users, Download } from 'lucide-react';
 import { User } from '../types';
 import { AccessKeyModal } from './AccessKeyModal';
 
@@ -9,6 +9,24 @@ export const LoginScreen: React.FC = () => {
   const [code, setCode] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [selectedUserForLogin, setSelectedUserForLogin] = useState<User | null>(null);
+
+  const handleDownloadStandalone = async () => {
+    try {
+      const res = await fetch('/pre-conselho.html');
+      const htmlText = await res.text();
+      const blob = new Blob([htmlText], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'index.html';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open('/pre-conselho.html', '_blank');
+    }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +96,35 @@ export const LoginScreen: React.FC = () => {
                 <p className="text-xs text-slate-600 mt-0.5">
                   Consulte o mural das turmas para ver as notas dos colegas de outras matérias, sem que ninguém possa alterar ou apagar o texto de outro.
                 </p>
+              </div>
+            </div>
+
+            {/* Caixa de Download do index.html Autônomo */}
+            <div className="p-3.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-950 space-y-2 shadow-xs">
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <Download className="w-4 h-4 text-emerald-700" />
+                <span>Usar Offline / No Navegador sem Instalação</span>
+              </div>
+              <p className="text-[11px] text-emerald-800 leading-relaxed">
+                Para rodar direto no seu computador sem terminal, sem Node.js e sem erros de package-lock, baixe o arquivo único <strong>index.html</strong> pronto para abrir em qualquer navegador com 2 cliques.
+              </p>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleDownloadStandalone}
+                  className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center justify-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Baixar index.html Autônomo</span>
+                </button>
+                <a
+                  href="/pre-conselho.html"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="py-2 px-3 bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold transition-colors"
+                >
+                  Testar Versão Autônoma
+                </a>
               </div>
             </div>
           </div>

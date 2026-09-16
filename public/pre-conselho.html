@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pré-Conselho de Classe – EE do Campo Frei Graciano Droessler</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React 18 & ReactDOM via CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel Standalone para JSX no navegador -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #print-modal-content, #print-modal-content * {
+        visibility: visible;
+      }
+      #print-modal-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: none !important;
+        box-shadow: none !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-white">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- DADOS INICIAIS ---
+    const DEFAULT_CONFIG = {
+      schoolName: 'ESCOLA ESTADUAL DO CAMPO FREI GRACIANO DROESSLER',
+      schoolSubtitle: 'ENSINO FUNDAMENTAL EM TEMPO INTEGRAL',
+      documentTitle: 'FICHA INDIVIDUAL – PRÉ-CONSELHO DE CLASSE',
+      pedagogaName: 'Prof.ª Helena Vasconcelos (Pedagoga)',
+      diretoraName: 'Prof.ª Maria Aparecida Gomes (Diretora)',
+      turmas: ['6º Ano A', '6º Ano B', '7º Ano A', '7º Ano B', '8º Ano A', '9º Ano A'],
+      componentes: [
+        'Língua Portuguesa', 'Matemática', 'Ciências', 'História',
+        'Geografia', 'Arte', 'Educação Física', 'Língua Inglesa'
+      ]
+    };
+
+    const DEFAULT_SECTIONS = [
+      { id: 'sec_1', order: 1, title: '1. PANORAMA DA TURMA' },
+      { id: 'sec_2', order: 2, title: '2. APRENDIZAGEM E FREQUÊNCIA' },
+      { id: 'sec_3', order: 3, title: '3. DESTAQUES E SITUAÇÕES QUE MERECEM ATENÇÃO' },
+      { id: 'sec_4', order: 4, title: '4. ENCAMINHAMENTOS' },
+      { id: 'sec_5', order: 5, title: '5. SÍNTESE DO PROFESSOR' }
+    ];
+
+    const DEFAULT_QUESTIONS = [
+      { id: 'q_1_1', sectionId: 'sec_1', order: 1, title: 'Como você avalia o desenvolvimento geral da turma em relação à aprendizagem?', active: true },
+      { id: 'q_1_2', sectionId: 'sec_1', order: 2, title: 'Como está a participação, o envolvimento e a postura dos estudantes nas aulas?', active: true },
+      { id: 'q_2_1', sectionId: 'sec_2', order: 3, title: 'Quais habilidades/conteúdos apresentam maior dificuldade para a turma?', active: true },
+      { id: 'q_2_2', sectionId: 'sec_2', order: 4, title: 'Há estudantes com baixa frequência ou que necessitam de acompanhamento mais próximo? Quais e por quê?', active: true },
+      { id: 'q_3_1', sectionId: 'sec_3', order: 5, title: 'Estudantes que se destacaram positivamente (aprendizagem, participação, responsabilidade ou protagonismo):', active: true },
+      { id: 'q_3_2', sectionId: 'sec_3', order: 6, title: 'Estudantes que apresentam dificuldades significativas ou necessitam de intervenção/encaminhamento:', active: true },
+      { id: 'q_4_1', sectionId: 'sec_4', order: 7, title: 'Quais estratégias já foram realizadas e quais ações você sugere para o próximo período?', active: true },
+      { id: 'q_4_2', sectionId: 'sec_4', order: 8, title: 'Há alguma observação importante que deve ser registrada no Pré-Conselho?', active: true },
+      { id: 'q_5_1', sectionId: 'sec_5', order: 9, title: 'Deixe aqui uma observação geral sobre a turma e/ou sobre algum estudante que considere relevante para o Conselho de Classe:', subtitle: 'Em poucas frases, descreva o perfil geral da turma e os resultados alcançados.', active: true }
+    ];
+
+    const DEFAULT_USERS = [
+      { id: 'admin', name: 'Coordenação Pedagógica / Direção', role: 'admin', accessCode: 'ADM2026', active: true },
+      { id: 'prof_carlos', name: 'Prof. Carlos Silva', role: 'professor', component: 'Língua Portuguesa', accessCode: 'PROF101', active: true },
+      { id: 'prof_mariana', name: 'Profa. Mariana Oliveira', role: 'professor', component: 'Matemática', accessCode: 'PROF102', active: true },
+      { id: 'prof_roberto', name: 'Prof. Roberto Santos', role: 'professor', component: 'Ciências', accessCode: 'PROF103', active: true },
+      { id: 'prof_juliana', name: 'Profa. Juliana Mendes', role: 'professor', component: 'História', accessCode: 'PROF104', active: true }
+    ];
+
+    const DEFAULT_EVALUATIONS = [
+      {
+        id: 'eval_1',
+        professorId: 'prof_mariana',
+        professorName: 'Profa. Mariana Oliveira',
+        turma: '6º Ano A',
+        componente: 'Matemática',
+        date: '2026-09-15',
+        status: 'completed',
+        answers: {
+          q_1_1: 'A turma demonstra bom rendimento global nas operações básicas, porém necessita de mais atenção em situações-problema.',
+          q_1_2: 'A maioria é muito participativa nas aulas práticas.',
+          q_2_1: 'Frações e cálculos com números decimais.',
+          q_2_2: 'Gabriel Santos teve faltas por motivo de saúde justificada.',
+          q_3_1: 'Ana Beatriz Souza e Lucas Ferreira - excelente desempenho.',
+          q_3_2: 'Matheus Henrique - necessita de apoio individual na tabuada.',
+          q_4_1: 'Realizamos oficinas de jogos matemáticos e listas de fixação.',
+          q_4_2: 'Agendar conversa com a família do aluno Matheus.',
+          q_5_1: 'Turma com ótimo potencial de aprendizagem e boa convivência.'
+        }
+      },
+      {
+        id: 'eval_2',
+        professorId: 'prof_carlos',
+        professorName: 'Prof. Carlos Silva',
+        turma: '6º Ano A',
+        componente: 'Língua Portuguesa',
+        date: '2026-09-14',
+        status: 'completed',
+        answers: {
+          q_1_1: 'Evolução positiva na leitura compartilhada e produção textual.',
+          q_1_2: 'Postura respeitosa e ativa nos debates literários.',
+          q_2_1: 'Coesão textual e pontuação nos períodos compostos.',
+          q_2_2: 'Gabriel Santos perdeu algumas leituras devido a ausências pontuais.',
+          q_3_1: 'Ana Beatriz Souza (leitora assídua) e Sofia Lima.',
+          q_3_2: 'Felipe Costa - precisa reforçar interpretação de texto.',
+          q_4_1: 'Diário de leitura individual e reescrita coletiva no quadro.',
+          q_4_2: 'Integrar leituras com as disciplinas de Ciências e História.',
+          q_5_1: 'Grupo comunicativo com avanços significativos na escrita.'
+        }
+      }
+    ];
+
+    // --- APP PRINCIPAL ---
+    function App() {
+      // Estado com persistência LocalStorage
+      const [config, setConfig] = useState(() => {
+        try {
+          const s = localStorage.getItem('pre_conselho_cfg');
+          return s ? JSON.parse(s) : DEFAULT_CONFIG;
+        } catch { return DEFAULT_CONFIG; }
+      });
+
+      const [questions, setQuestions] = useState(() => {
+        try {
+          const s = localStorage.getItem('pre_conselho_qst');
+          return s ? JSON.parse(s) : DEFAULT_QUESTIONS;
+        } catch { return DEFAULT_QUESTIONS; }
+      });
+
+      const [users, setUsers] = useState(() => {
+        try {
+          const s = localStorage.getItem('pre_conselho_usr');
+          return s ? JSON.parse(s) : DEFAULT_USERS;
+        } catch { return DEFAULT_USERS; }
+      });
+
+      const [evaluations, setEvaluations] = useState(() => {
+        try {
+          const s = localStorage.getItem('pre_conselho_evl');
+          return s ? JSON.parse(s) : DEFAULT_EVALUATIONS;
+        } catch { return DEFAULT_EVALUATIONS; }
+      });
+
+      const [currentUser, setCurrentUser] = useState(null);
+      const [modalTargetUser, setModalTargetUser] = useState(null);
+      const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+      const [printEvaluation, setPrintEvaluation] = useState(null);
+      const [adminTab, setAdminTab] = useState('classes'); // 'classes' | 'questions' | 'teachers' | 'config'
+      const [teacherTab, setTeacherTab] = useState('my'); // 'my' | 'mural' | 'form'
+      const [editingEval, setEditingEval] = useState(null);
+
+      // Salva no LocalStorage sempre que alterar
+      useEffect(() => { localStorage.setItem('pre_conselho_cfg', JSON.stringify(config)); }, [config]);
+      useEffect(() => { localStorage.setItem('pre_conselho_qst', JSON.stringify(questions)); }, [questions]);
+      useEffect(() => { localStorage.setItem('pre_conselho_usr', JSON.stringify(users)); }, [users]);
+      useEffect(() => { localStorage.setItem('pre_conselho_evl', JSON.stringify(evaluations)); }, [evaluations]);
+
+      // Login por chave avulsa
+      const handleDirectLogin = (code) => {
+        const clean = code.trim().toLowerCase();
+        if (!clean) return { success: false, message: 'Digite a chave de acesso.' };
+        const found = users.find(u => u.accessCode.trim().toLowerCase() === clean);
+        if (!found) return { success: false, message: 'Chave de acesso não cadastrada.' };
+        if (!found.active) return { success: false, message: 'Este perfil está inativo.' };
+        setCurrentUser(found);
+        return { success: true };
+      };
+
+      // Login por usuário selecionado + chave
+      const handleLoginForUser = (userId, code) => {
+        const clean = code.trim().toLowerCase();
+        const found = users.find(u => u.id === userId);
+        if (!found) return { success: false, message: 'Usuário não encontrado.' };
+        if (found.accessCode.trim().toLowerCase() !== clean) {
+          return { success: false, message: `Chave incorreta para ${found.name}.` };
+        }
+        setCurrentUser(found);
+        setModalTargetUser(null);
+        return { success: true };
+      };
+
+      // Salvar avaliação
+      const handleSaveEval = (data) => {
+        if (data.id) {
+          setEvaluations(prev => prev.map(e => e.id === data.id ? { ...e, ...data } : e));
+        } else {
+          const newId = 'eval_' + Date.now();
+          setEvaluations(prev => [{ ...data, id: newId }, ...prev]);
+        }
+        setTeacherTab('my');
+        setEditingEval(null);
+      };
+
+      // Excluir avaliação
+      const handleDeleteEval = (id) => {
+        if (confirm('Deseja realmente excluir esta ficha de avaliação?')) {
+          setEvaluations(prev => prev.filter(e => e.id !== id));
+        }
+      };
+
+      // Atualizar perfil
+      const handleUpdateProfile = (updatedData) => {
+        setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updatedData } : u));
+        setCurrentUser(prev => ({ ...prev, ...updatedData }));
+        if (updatedData.name) {
+          setEvaluations(prev => prev.map(e => e.professorId === currentUser.id ? { ...e, professorName: updatedData.name } : e));
+        }
+        setIsProfileModalOpen(false);
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col bg-slate-100">
+          {/* TOPO / HEADER */}
+          <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md no-print">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-inner">
+                  🏫
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    {config.schoolSubtitle}
+                  </span>
+                  <h1 className="text-sm sm:text-base font-bold text-slate-100">{config.schoolName}</h1>
+                </div>
+              </div>
+
+              {currentUser && (
+                <div className="flex items-center gap-2.5">
+                  <button
+                    onClick={() => setIsProfileModalOpen(true)}
+                    className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-700 text-left transition-all"
+                  >
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-100">{currentUser.name}</div>
+                      <div className="text-[10px] text-emerald-400 font-medium">
+                        {currentUser.role === 'admin' ? 'Administrador' : currentUser.component} • ✏️ Editar Perfil
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setCurrentUser(null)}
+                    className="px-3 py-1.5 bg-rose-950/50 hover:bg-rose-900 text-rose-300 rounded-xl text-xs font-bold border border-rose-800/50 transition-colors"
+                  >
+                    Sair
+                  </button>
+                </div>
+              )}
+            </div>
+          </header>
+
+          {/* CONTEÚDO PRINCIPAL */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 no-print">
+            {!currentUser ? (
+              <LoginView
+                users={users}
+                onDirectLogin={handleDirectLogin}
+                onSelectUser={(u) => setModalTargetUser(u)}
+              />
+            ) : currentUser.role === 'admin' ? (
+              <AdminDashboard
+                config={config}
+                setConfig={setConfig}
+                users={users}
+                setUsers={setUsers}
+                questions={questions}
+                setQuestions={setQuestions}
+                evaluations={evaluations}
+                adminTab={adminTab}
+                setAdminTab={setAdminTab}
+                onPrint={(ev) => setPrintEvaluation(ev)}
+              />
+            ) : (
+              <TeacherDashboard
+                currentUser={currentUser}
+                config={config}
+                questions={questions}
+                evaluations={evaluations}
+                teacherTab={teacherTab}
+                setTeacherTab={setTeacherTab}
+                editingEval={editingEval}
+                setEditingEval={setEditingEval}
+                onSave={handleSaveEval}
+                onDelete={handleDeleteEval}
+                onPrint={(ev) => setPrintEvaluation(ev)}
+                onOpenProfile={() => setIsProfileModalOpen(true)}
+              />
+            )}
+          </main>
+
+          {/* MODAL DE ENTRADA COM CHAVE DE ACESSO DO PERFIL */}
+          {modalTargetUser && (
+            <AccessKeyModal
+              user={modalTargetUser}
+              onClose={() => setModalTargetUser(null)}
+              onConfirm={(code) => handleLoginForUser(modalTargetUser.id, code)}
+            />
+          )}
+
+          {/* MODAL DE EDIÇÃO DO PRÓPRIO PERFIL */}
+          {isProfileModalOpen && currentUser && (
+            <ProfileEditModal
+              user={currentUser}
+              config={config}
+              onClose={() => setIsProfileModalOpen(false)}
+              onSave={handleUpdateProfile}
+            />
+          )}
+
+          {/* MODAL / VISUALIZAÇÃO DE IMPRESSÃO A4 */}
+          {printEvaluation && (
+            <PrintModal
+              evaluation={printEvaluation}
+              config={config}
+              questions={questions}
+              onClose={() => setPrintEvaluation(null)}
+            />
+          )}
+
+          {/* RODAPÉ */}
+          <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 no-print mt-auto">
+            Sistema Oficial de Pré-Conselho de Classe • Arquivo Autônomo para Navegador • Dados salvos localmente
+          </footer>
+        </div>
+      );
+    }
+
+    // --- COMPONENTE: TELA DE LOGIN ---
+    function LoginView({ users, onDirectLogin, onSelectUser }) {
+      const [code, setCode] = useState('');
+      const [error, setError] = useState('');
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        setError('');
+        const res = onDirectLogin(code);
+        if (!res.success) setError(res.message);
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto py-6 space-y-6">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-8">
+            <div className="text-center max-w-md mx-auto mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mx-auto mb-3 text-2xl shadow-md">
+                🔑
+              </div>
+              <h2 className="text-xl font-extrabold text-slate-900">Entrar com Chave de Acesso</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Digite sua chave pessoal ou selecione um perfil cadastrado abaixo para digitar sua chave correspondente.
+              </p>
+            </div>
+
+            {/* Input Direto de Chave */}
+            <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Sua Chave de Acesso
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={code}
+                    onChange={e => setCode(e.target.value)}
+                    placeholder="Ex: PROF101 ou sua chave..."
+                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-sm tracking-wider uppercase font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition-colors"
+                  >
+                    Entrar
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold">
+                  ⚠️ {error}
+                </div>
+              )}
+            </form>
+
+            {/* Lista de Perfis que Exigem Chave */}
+            <div className="mt-8 pt-6 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  👥 Entrar por Perfil Cadastrado
+                </span>
+                <span className="text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+                  🔒 Exige Chave de Acesso
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {users.map(u => (
+                  <button
+                    key={u.id}
+                    onClick={() => onSelectUser(u)}
+                    className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 text-left transition-all group flex items-center justify-between"
+                  >
+                    <div className="truncate pr-2">
+                      <div className="text-xs font-bold text-slate-800 group-hover:text-emerald-950 truncate">
+                        {u.role === 'admin' ? '🛡️ ' : '👤 '} {u.name}
+                      </div>
+                      <div className="text-[10px] text-slate-500 group-hover:text-emerald-700 truncate">
+                        {u.role === 'admin' ? 'Coordenação / Direção' : u.component}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-1 bg-white border border-slate-200 group-hover:border-emerald-300 group-hover:bg-emerald-100 text-slate-700 group-hover:text-emerald-900 rounded-lg flex-shrink-0">
+                      🔒 Digitar Chave
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- COMPONENTE: MODAL PARA DIGITAR CHAVE DO PERFIL SELECIONADO ---
+    function AccessKeyModal({ user, onClose, onConfirm }) {
+      const [key, setKey] = useState('');
+      const [err, setErr] = useState('');
+
+      const handleSub = (e) => {
+        e.preventDefault();
+        setErr('');
+        const res = onConfirm(key);
+        if (!res.success) setErr(res.message);
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900">Acesso ao Perfil</h3>
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+            </div>
+
+            <form onSubmit={handleSub} className="mt-4 space-y-4">
+              <div className="text-center">
+                <div className="text-2xl mb-1">{user.role === 'admin' ? '🛡️' : '👨‍🏫'}</div>
+                <h4 className="text-sm font-bold text-slate-900">{user.name}</h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {user.role === 'admin' ? 'Coordenação' : user.component} • Digite a chave de acesso deste perfil:
+                </p>
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  value={key}
+                  onChange={e => setKey(e.target.value)}
+                  placeholder="Chave de acesso pessoal..."
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-center text-slate-900 font-mono text-sm tracking-wider uppercase font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  autoFocus
+                  required
+                />
+              </div>
+
+              {err && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold">
+                  ⚠️ {err}
+                </div>
+              )}
+
+              {/* Dica de teste */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[11px] text-slate-600 flex items-center justify-between">
+                <span>Chave cadastrada:</span>
+                <button
+                  type="button"
+                  onClick={() => setKey(user.accessCode)}
+                  className="text-emerald-700 font-bold hover:underline"
+                >
+                  Preencher ({user.accessCode})
+                </button>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow"
+                >
+                  Confirmar e Entrar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // --- COMPONENTE: MODAL DE EDIÇÃO DO PRÓPRIO PERFIL ---
+    function ProfileEditModal({ user, config, onClose, onSave }) {
+      const [name, setName] = useState(user.name);
+      const [component, setComponent] = useState(user.component || config.componentes[0]);
+      const [accessCode, setAccessCode] = useState(user.accessCode);
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!name.trim() || !accessCode.trim()) {
+          alert('Preencha nome e chave de acesso.');
+          return;
+        }
+        onSave({
+          name: name.trim(),
+          accessCode: accessCode.trim().toUpperCase(),
+          component: user.role === 'professor' ? component : undefined
+        });
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900">Editar Meu Perfil</h3>
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Seu Nome Completo</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Sua Chave de Acesso Pessoal</label>
+                <input
+                  type="text"
+                  value={accessCode}
+                  onChange={e => setAccessCode(e.target.value.toUpperCase())}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold uppercase focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+                <p className="text-[10px] text-slate-500 mt-1">Esta chave será exigida sempre que você entrar.</p>
+              </div>
+
+              {user.role === 'professor' && (
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Componente Curricular</label>
+                  <select
+                    value={component}
+                    onChange={e => setComponent(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium"
+                  >
+                    {config.componentes.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-100 rounded-xl font-bold">
+                  Cancelar
+                </button>
+                <button type="submit" className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow">
+                  Salvar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // --- COMPONENTE: PAINEL DO PROFESSOR ---
+    function TeacherDashboard({
+      currentUser, config, questions, evaluations,
+      teacherTab, setTeacherTab, editingEval, setEditingEval,
+      onSave, onDelete, onPrint, onOpenProfile
+    }) {
+      const myEvaluations = evaluations.filter(e => e.professorId === currentUser.id);
+      const [selectedTurmaMural, setSelectedTurmaMural] = useState(config.turmas[0]);
+
+      // Filtrar avaliações de outros professores para o mural coletivo
+      const muralEvaluations = evaluations.filter(e => e.turma === selectedTurmaMural);
+
+      return (
+        <div className="space-y-6">
+          {/* Barra de Navegação do Professor */}
+          <div className="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setTeacherTab('my'); setEditingEval(null); }}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  teacherTab === 'my' ? 'bg-emerald-600 text-white shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                📋 Minhas Fichas ({myEvaluations.length})
+              </button>
+              <button
+                onClick={() => { setTeacherTab('mural'); setEditingEval(null); }}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  teacherTab === 'mural' ? 'bg-emerald-600 text-white shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                👀 Mural Coletivo (Somente Leitura)
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setEditingEval({
+                    turma: config.turmas[0],
+                    componente: currentUser.component || config.componentes[0],
+                    date: new Date().toISOString().split('T')[0],
+                    answers: {},
+                    professorId: currentUser.id,
+                    professorName: currentUser.name
+                  });
+                  setTeacherTab('form');
+                }}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5"
+              >
+                ➕ Preencher Nova Ficha
+              </button>
+              <button
+                onClick={onOpenProfile}
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold"
+              >
+                ⚙️ Meu Perfil
+              </button>
+            </div>
+          </div>
+
+          {/* ABA 1: MINHAS FICHAS */}
+          {teacherTab === 'my' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-800">Fichas de Avaliação Preenchidas por Você</h3>
+                <span className="text-xs text-slate-500">Seus dados ficam protegidos e isolados</span>
+              </div>
+
+              {myEvaluations.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-dashed border-slate-300 text-center">
+                  <div className="text-3xl mb-2">📝</div>
+                  <h4 className="text-sm font-bold text-slate-800">Nenhuma ficha preenchida ainda</h4>
+                  <p className="text-xs text-slate-500 mt-1 mb-4">Clique no botão abaixo para começar a preencher uma turma.</p>
+                  <button
+                    onClick={() => {
+                      setEditingEval({
+                        turma: config.turmas[0],
+                        componente: currentUser.component || config.componentes[0],
+                        date: new Date().toISOString().split('T')[0],
+                        answers: {},
+                        professorId: currentUser.id,
+                        professorName: currentUser.name
+                      });
+                      setTeacherTab('form');
+                    }}
+                    className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow"
+                  >
+                    Preencher Primeira Ficha
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {myEvaluations.map(ev => (
+                    <div key={ev.id} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow transition-shadow flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-extrabold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg">
+                            {ev.turma}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium">{ev.date}</span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900">{ev.componente}</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">Professor(a): {ev.professorName}</p>
+                        
+                        <div className="mt-3 text-xs text-slate-600 line-clamp-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                          {ev.answers['q_1_1'] || ev.answers['q_5_1'] || 'Ficha preenchida.'}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => onPrint(ev)}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold"
+                          title="Gerar impressão A4 oficial"
+                        >
+                          🖨️ Imprimir A4
+                        </button>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => { setEditingEval(ev); setTeacherTab('form'); }}
+                            className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold"
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
+                            onClick={() => onDelete(ev.id)}
+                            className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-bold"
+                            title="Excluir"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ABA 2: MURAL COLETIVO (SOMENTE LEITURA) */}
+          {teacherTab === 'mural' && (
+            <div className="space-y-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl">🔒</span>
+                  <div>
+                    <h4 className="text-xs font-bold text-amber-950">Mural Coletivo de Consulta (Somente Leitura)</h4>
+                    <p className="text-[11px] text-amber-800">
+                      Você pode consultar as avaliações dos colegas para a mesma turma. Ninguém pode alterar o texto de outro professor.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-700">Turma:</span>
+                  <select
+                    value={selectedTurmaMural}
+                    onChange={e => setSelectedTurmaMural(e.target.value)}
+                    className="px-3 py-1.5 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500"
+                  >
+                    {config.turmas.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {muralEvaluations.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-xs text-slate-500">
+                  Nenhum professor registrou avaliação para {selectedTurmaMural} ainda.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {muralEvaluations.map(ev => {
+                    const isMine = ev.professorId === currentUser.id;
+                    return (
+                      <div key={ev.id} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <div>
+                            <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">
+                              {ev.componente}
+                            </span>
+                            <h4 className="text-xs font-bold text-slate-900 mt-1">{ev.professorName}</h4>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            isMine ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                          }`}>
+                            {isMine ? 'Sua Ficha' : '🔒 Leitura Protegida'}
+                          </span>
+                        </div>
+
+                        {/* Resumo das Respostas */}
+                        <div className="space-y-2 text-xs">
+                          {questions.slice(0, 4).map(q => (
+                            <div key={q.id} className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                              <span className="font-bold text-slate-700 block text-[11px] mb-0.5">{q.title}</span>
+                              <p className="text-slate-600 text-[11px]">{ev.answers[q.id] || '—'}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="pt-2 flex justify-end">
+                          <button
+                            onClick={() => onPrint(ev)}
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold"
+                          >
+                            🖨️ Ver Ficha Completa
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ABA 3: FORMULÁRIO DE PREENCHIMENTO */}
+          {teacherTab === 'form' && editingEval && (
+            <EvaluationForm
+              initialData={editingEval}
+              config={config}
+              questions={questions}
+              currentUser={currentUser}
+              onCancel={() => { setTeacherTab('my'); setEditingEval(null); }}
+              onSave={onSave}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // --- COMPONENTE: FORMULÁRIO DE AVALIAÇÃO COM AS 5 SEÇÕES OFICIAIS ---
+    function EvaluationForm({ initialData, config, questions, currentUser, onCancel, onSave }) {
+      const [turma, setTurma] = useState(initialData.turma || config.turmas[0]);
+      const [componente, setComponente] = useState(initialData.componente || currentUser.component || config.componentes[0]);
+      const [date, setDate] = useState(initialData.date || new Date().toISOString().split('T')[0]);
+      const [answers, setAnswers] = useState(initialData.answers || {});
+
+      const handleAnswerChange = (qId, val) => {
+        setAnswers(prev => ({ ...prev, [qId]: val }));
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave({
+          ...initialData,
+          turma,
+          componente,
+          date,
+          answers,
+          professorId: currentUser.id,
+          professorName: currentUser.name,
+          status: 'completed'
+        });
+      };
+
+      return (
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">
+                {initialData.id ? 'Editar Ficha Individual' : 'Preencher Nova Ficha Individual'}
+              </h3>
+              <p className="text-xs text-slate-500">Pré-Conselho de Classe • Ensino Fundamental em Tempo Integral</p>
+            </div>
+            <button type="button" onClick={onCancel} className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">
+              Voltar
+            </button>
+          </div>
+
+          {/* Cabeçalho de Dados da Ficha */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Classe / Turma:</label>
+              <select
+                value={turma}
+                onChange={e => setTurma(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg font-bold"
+              >
+                {config.turmas.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Componente Curricular:</label>
+              <input
+                type="text"
+                value={componente}
+                onChange={e => setComponente(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg font-bold"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Data:</label>
+              <input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg font-bold"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Perguntas Divididas em Seções */}
+          <div className="space-y-6">
+            {DEFAULT_SECTIONS.map(sec => {
+              const secQuestions = questions.filter(q => q.sectionId === sec.id && q.active !== false);
+              if (secQuestions.length === 0) return null;
+              return (
+                <div key={sec.id} className="border border-slate-200 rounded-2xl overflow-hidden">
+                  <div className="bg-slate-800 text-white px-4 py-2.5 text-xs font-bold tracking-wide">
+                    {sec.title}
+                  </div>
+                  <div className="p-4 space-y-4 bg-white">
+                    {secQuestions.map(q => (
+                      <div key={q.id} className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-800">
+                          {q.title}
+                        </label>
+                        {q.subtitle && (
+                          <p className="text-[11px] text-slate-500 italic">{q.subtitle}</p>
+                        )}
+                        <textarea
+                          rows={3}
+                          value={answers[q.id] || ''}
+                          onChange={e => handleAnswerChange(q.id, e.target.value)}
+                          placeholder="Digite as observações detalhadas..."
+                          className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow"
+            >
+              💾 Salvar Ficha de Avaliação
+            </button>
+          </div>
+        </form>
+      );
+    }
+
+    // --- COMPONENTE: PAINEL DO ADMINISTRADOR ---
+    function AdminDashboard({
+      config, setConfig, users, setUsers, questions, setQuestions,
+      evaluations, adminTab, setAdminTab, onPrint
+    }) {
+      const [newTeacherName, setNewTeacherName] = useState('');
+      const [newTeacherComponent, setNewTeacherComponent] = useState(config.componentes[0]);
+      const [newTeacherCode, setNewTeacherCode] = useState('');
+
+      const handleAddTeacher = (e) => {
+        e.preventDefault();
+        if (!newTeacherName.trim() || !newTeacherCode.trim()) {
+          alert('Preencha nome e chave de acesso.');
+          return;
+        }
+        const newTeacher = {
+          id: 'user_' + Date.now(),
+          name: newTeacherName.trim(),
+          component: newTeacherComponent,
+          accessCode: newTeacherCode.trim().toUpperCase(),
+          role: 'professor',
+          active: true
+        };
+        setUsers(prev => [...prev, newTeacher]);
+        setNewTeacherName('');
+        setNewTeacherCode('');
+        alert('Professor cadastrado com sucesso!');
+      };
+
+      const handleToggleUser = (id) => {
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, active: !u.active } : u));
+      };
+
+      return (
+        <div className="space-y-6">
+          {/* Navegação Admin */}
+          <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-2">
+            <button
+              onClick={() => setAdminTab('classes')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold ${adminTab === 'classes' ? 'bg-amber-500 text-white' : 'bg-slate-100'}`}
+            >
+              📊 Quadro por Turmas
+            </button>
+            <button
+              onClick={() => setAdminTab('teachers')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold ${adminTab === 'teachers' ? 'bg-amber-500 text-white' : 'bg-slate-100'}`}
+            >
+              👥 Professores & Chaves
+            </button>
+            <button
+              onClick={() => setAdminTab('questions')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold ${adminTab === 'questions' ? 'bg-amber-500 text-white' : 'bg-slate-100'}`}
+            >
+              📝 Banco de Perguntas
+            </button>
+            <button
+              onClick={() => setAdminTab('config')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold ${adminTab === 'config' ? 'bg-amber-500 text-white' : 'bg-slate-100'}`}
+            >
+              ⚙️ Dados da Escola & Backup
+            </button>
+          </div>
+
+          {/* 1. QUADRO POR TURMAS */}
+          {adminTab === 'classes' && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-slate-800">Acompanhamento de Entregas do Pré-Conselho</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {config.turmas.map(t => {
+                  const classEvals = evaluations.filter(e => e.turma === t);
+                  return (
+                    <div key={t} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                        <h4 className="text-sm font-extrabold text-slate-900">{t}</h4>
+                        <span className="text-xs font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">
+                          {classEvals.length} fichas entregues
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {classEvals.length === 0 ? (
+                          <p className="text-xs text-slate-400 italic">Nenhum componente entregou ainda.</p>
+                        ) : (
+                          classEvals.map(ev => (
+                            <div key={ev.id} className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-lg">
+                              <div>
+                                <span className="font-bold text-slate-800 block">{ev.componente}</span>
+                                <span className="text-[10px] text-slate-500">{ev.professorName}</span>
+                              </div>
+                              <button
+                                onClick={() => onPrint(ev)}
+                                className="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold hover:bg-slate-100"
+                              >
+                                🖨️ Ver
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 2. PROFESSORES & CHAVES */}
+          {adminTab === 'teachers' && (
+            <div className="space-y-6">
+              {/* Formulário de Novo Professor */}
+              <form onSubmit={handleAddTeacher} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Cadastrar Novo Professor</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <input
+                    type="text"
+                    value={newTeacherName}
+                    onChange={e => setNewTeacherName(e.target.value)}
+                    placeholder="Nome do Professor (ex: Prof. Lucas)"
+                    className="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium"
+                    required
+                  />
+                  <select
+                    value={newTeacherComponent}
+                    onChange={e => setNewTeacherComponent(e.target.value)}
+                    className="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium"
+                  >
+                    {config.componentes.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={newTeacherCode}
+                    onChange={e => setNewTeacherCode(e.target.value.toUpperCase())}
+                    placeholder="Chave de Acesso (ex: PROF202)"
+                    className="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold uppercase"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow">
+                    ➕ Adicionar Professor
+                  </button>
+                </div>
+              </form>
+
+              {/* Lista de Professores */}
+              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 font-bold">
+                    <tr>
+                      <th className="p-3">Nome</th>
+                      <th className="p-3">Papel / Disciplina</th>
+                      <th className="p-3">Chave de Acesso</th>
+                      <th className="p-3">Status</th>
+                      <th className="p-3 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {users.map(u => (
+                      <tr key={u.id} className="hover:bg-slate-50">
+                        <td className="p-3 font-bold text-slate-800">{u.name}</td>
+                        <td className="p-3 text-slate-600">{u.role === 'admin' ? 'Administrador' : u.component}</td>
+                        <td className="p-3 font-mono font-bold text-emerald-700">{u.accessCode}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${u.active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                            {u.active ? 'Ativo' : 'Inativo'}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          {u.role !== 'admin' && (
+                            <button
+                              onClick={() => handleToggleUser(u.id)}
+                              className="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-[10px] font-bold"
+                            >
+                              {u.active ? 'Desativar' : 'Ativar'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 3. BANCO DE PERGUNTAS */}
+          {adminTab === 'questions' && (
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Perguntas da Ficha de Pré-Conselho</h4>
+                  <p className="text-xs text-slate-500">Digitalizadas fielmente do formulário oficial</p>
+                </div>
+                <button
+                  onClick={() => {
+                    if (confirm('Restaurar as 9 perguntas originais da ficha?')) {
+                      setQuestions(DEFAULT_QUESTIONS);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold"
+                >
+                  Restaurar Padrão
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {questions.map((q, idx) => (
+                  <div key={q.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                      <span>Pergunta #{idx + 1}</span>
+                      <button
+                        onClick={() => {
+                          setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, active: !item.active } : item));
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded font-bold ${q.active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}
+                      >
+                        {q.active ? 'Ativa no Formulário' : 'Oculta'}
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={q.title}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, title: val } : item));
+                      }}
+                      className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. CONFIGURAÇÃO DA ESCOLA & BACKUP */}
+          {adminTab === 'config' && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 text-xs">
+                <h4 className="text-sm font-bold text-slate-900">Identidade da Escola & Signatários</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Nome da Escola:</label>
+                    <input
+                      type="text"
+                      value={config.schoolName}
+                      onChange={e => setConfig({ ...config, schoolName: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Subtítulo / Modalidade:</label>
+                    <input
+                      type="text"
+                      value={config.schoolSubtitle}
+                      onChange={e => setConfig({ ...config, schoolSubtitle: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Nome da Pedagoga (Assinatura):</label>
+                    <input
+                      type="text"
+                      value={config.pedagogaName}
+                      onChange={e => setConfig({ ...config, pedagogaName: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Nome da Diretora (Assinatura):</label>
+                    <input
+                      type="text"
+                      value={config.diretoraName}
+                      onChange={e => setConfig({ ...config, diretoraName: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Backup JSON */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 text-xs">
+                <h4 className="text-sm font-bold text-slate-900">Backup & Restauração de Dados</h4>
+                <p className="text-slate-500">
+                  Como este sistema funciona direto no seu navegador com armazenamento local, você pode exportar um arquivo de backup em JSON a qualquer momento.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      const data = { config, users, questions, evaluations, exportedAt: new Date().toISOString() };
+                      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `backup_pre_conselho_${new Date().toISOString().split('T')[0]}.json`;
+                      a.click();
+                    }}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow"
+                  >
+                    📥 Baixar Arquivo de Backup (JSON)
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm('Atenção: Restaurar os dados de fábrica apagará os registros atuais salvos neste navegador. Continuar?')) {
+                        localStorage.clear();
+                        window.location.reload();
+                      }
+                    }}
+                    className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl border border-rose-200"
+                  >
+                    Restaurar Dados Iniciais
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- COMPONENTE: MODAL DE IMPRESSÃO A4 OFICIAL (RÉPLICA DA FICHA DE PAPEL) ---
+    function PrintModal({ evaluation, config, questions, onClose }) {
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden my-6">
+            <div className="p-4 bg-slate-900 text-white flex items-center justify-between no-print">
+              <span className="text-xs font-bold">Visualização da Folha Oficial de Impressão (A4)</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow"
+                >
+                  🖨️ Imprimir / Salvar PDF
+                </button>
+                <button
+                  onClick={onClose}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+
+            {/* FOLHA A4 OFICIAL IDÊNTICA ÀS FOTOS */}
+            <div id="print-modal-content" className="p-8 sm:p-12 text-slate-950 bg-white font-serif text-[11pt] leading-relaxed">
+              {/* CABEÇALHO */}
+              <div className="text-center pb-4 border-b-2 border-slate-900 mb-6">
+                <h2 className="text-base font-bold tracking-tight uppercase">{config.schoolName}</h2>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">{config.schoolSubtitle}</h3>
+                <h1 className="text-sm font-extrabold uppercase mt-2 border-y border-slate-400 py-1 inline-block px-4">
+                  {config.documentTitle}
+                </h1>
+              </div>
+
+              {/* DADOS INICIAIS */}
+              <div className="grid grid-cols-2 gap-y-2 text-xs border border-slate-800 p-3 mb-6 bg-slate-50/50">
+                <div><strong>Classe / Turma:</strong> {evaluation.turma}</div>
+                <div><strong>Data:</strong> {evaluation.date}</div>
+                <div><strong>Componente Curricular:</strong> {evaluation.componente}</div>
+                <div><strong>Professor(a):</strong> {evaluation.professorName}</div>
+              </div>
+
+              {/* AS 5 SEÇÕES E PERGUNTAS */}
+              <div className="space-y-4 text-xs">
+                {DEFAULT_SECTIONS.map(sec => {
+                  const secQs = questions.filter(q => q.sectionId === sec.id && q.active !== false);
+                  if (secQs.length === 0) return null;
+                  return (
+                    <div key={sec.id} className="space-y-2">
+                      <div className="font-bold uppercase tracking-wider bg-slate-200 px-2 py-1 border-l-4 border-slate-800">
+                        {sec.title}
+                      </div>
+                      <div className="space-y-3 pl-2">
+                        {secQs.map(q => (
+                          <div key={q.id}>
+                            <p className="font-semibold text-slate-800">• {q.title}</p>
+                            <p className="mt-1 pl-3 text-slate-900 italic min-h-[1.5rem] whitespace-pre-wrap">
+                              {evaluation.answers[q.id] || '—'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ASSINATURAS NO FINAL */}
+              <div className="mt-12 pt-8 border-t border-slate-400 grid grid-cols-3 gap-6 text-center text-[10px]">
+                <div>
+                  <div className="border-b border-slate-700 mb-1.5 h-8"></div>
+                  <strong className="block">{evaluation.professorName}</strong>
+                  <span className="text-slate-600">Assinatura do(a) Professor(a)</span>
+                </div>
+                <div>
+                  <div className="border-b border-slate-700 mb-1.5 h-8"></div>
+                  <strong className="block">{config.pedagogaName}</strong>
+                  <span className="text-slate-600">Assinatura da Pedagoga</span>
+                </div>
+                <div>
+                  <div className="border-b border-slate-700 mb-1.5 h-8"></div>
+                  <strong className="block">{config.diretoraName}</strong>
+                  <span className="text-slate-600">Assinatura da Diretora</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Renderiza a aplicação no elemento root
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

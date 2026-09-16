@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSchool } from '../context/SchoolContext';
-import { Shield, UserCheck, LogOut, Users, School, UserCog, Lock } from 'lucide-react';
+import { Shield, UserCheck, LogOut, Users, School, UserCog, Lock, Download } from 'lucide-react';
 import { ProfileModal } from './ProfileModal';
 import { AccessKeyModal } from './AccessKeyModal';
 import { User } from '../types';
@@ -15,6 +15,24 @@ export const Header: React.FC<HeaderProps> = ({ onOpenPrint, activeTab, onTabCha
   const { currentUser, logout, schoolConfig, users } = useSchool();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedUserToSwitch, setSelectedUserToSwitch] = useState<User | null>(null);
+
+  const handleDownloadStandalone = async () => {
+    try {
+      const res = await fetch('/pre-conselho.html');
+      const htmlText = await res.text();
+      const blob = new Blob([htmlText], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'index.html';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open('/pre-conselho.html', '_blank');
+    }
+  };
 
   return (
     <>
@@ -119,6 +137,17 @@ export const Header: React.FC<HeaderProps> = ({ onOpenPrint, activeTab, onTabCha
                   </div>
                 </div>
 
+                {/* Botão Baixar Arquivo Único index.html */}
+                <button
+                  type="button"
+                  onClick={handleDownloadStandalone}
+                  className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+                  title="Baixar todo o sistema em arquivo único index.html autônomo (roda com 2 cliques em qualquer navegador)"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Baixar index.html</span>
+                </button>
+
                 {/* Botão de Logout */}
                 <button
                   onClick={logout}
@@ -129,7 +158,19 @@ export const Header: React.FC<HeaderProps> = ({ onOpenPrint, activeTab, onTabCha
                   <span className="hidden sm:inline">Sair</span>
                 </button>
               </div>
-            ) : null}
+            ) : (
+              <div className="flex items-center gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={handleDownloadStandalone}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+                  title="Baixar todo o sistema em arquivo único index.html autônomo (roda com 2 cliques em qualquer navegador)"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Baixar index.html Autônomo</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
