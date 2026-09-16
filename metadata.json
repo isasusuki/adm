@@ -1,0 +1,6 @@
+{
+  "name": "Sistema Pré-Conselho Escolar",
+  "description": "Plataforma de avaliação escolar para Pré-Conselho com painéis de Administrador e Professor, login seguro com código, cadastro de perguntas e visualização de respostas sem edição.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
